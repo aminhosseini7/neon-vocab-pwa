@@ -1,8 +1,8 @@
 {
   "name": "Neon Vocab PWA",
   "short_name": "Vocab",
-  "start_url": "/neon-vocab-pwa/",
-  "scope": "/neon-vocab-pwa/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#7209B7",
