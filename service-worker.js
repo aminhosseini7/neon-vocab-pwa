@@ -2,7 +2,8 @@
 self.addEventListener("install", event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open("neon-vocab-cache-v3").then(cache => {
+    caches.open("neon-vocab-cache-v4").then(cache => {
+      
       return cache.addAll([
         "./",
         "./index.html",
