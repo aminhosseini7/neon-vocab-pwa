@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>Neon Vocab App – SRS Flashcards</title>
+
+    <!-- PWA / iOS -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Neon Vocab">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- فونت -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.0.2/dist/font-face.css" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- لغت‌ها (از vocab.js) -->
+    <script src="vocab.js"></script>
+
+    <style>
+        body {
+            font-family: Vazirmatn, sans-serif;
+            background: linear-gradient(135deg, #3a0ca3, #4361ee);
+            margin: 0;
+            padding: 0;
+            color: #fff;
+            transition: 0.3s;
+        }
+        .dark { background: #000; color: #eee; }
+
+        .top-bar {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 999;
+        }
+        .toggle-dark {
+            background: transparent;
+            border: 2px solid #bb86fc;
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+        .toggle-dark:hover { background: #bb86fc; color: #000; }
+
+        .container {
+            width: 92%;
+            max-width: 680px;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 20px rgba(187, 134, 252, 0.5);
+            margin: 80px auto 40px;
+            padding: 24px;
+            border-radius: 20px;
+            transition: 0.3s;
+        }
+        .dark .container {
+            background: rgba(0,0,0,0.5);
+            box-shadow: 0 0 20px rgba(136, 0, 255, 0.6);
+        }
+
+        h2 { margin-top: 0; font-size: 20px; }
+
+        button {
+            padding: 11px 18px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            background: #7209b7;
+            color: white;
+            box-shadow: 0 0 12px rgba(114,9,183,0.6);
+            transition: 0.25s;
+        }
+        button:hover { background: #560bad; }
+
+        .neon-card {
+            padding: 24px;
+            background: rgba(255,255,255,0.18);
+            border-radius: 20px;
+            margin-top: 18px;
+            text-align: center;
+            box-shadow: 0 0 15px rgba(187, 134, 252, 0.6);
+            animation: fadeIn 0.5s;
+        }
+
+        .word {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            text-shadow: 0 0 12px #b517ff;
+        }
+
+        #meaningBox {
+            display: none;
+            margin-top: 15px;
+            padding: 14px;
+            text-align: right;
+            background: rgba(0,0,0,0.35);
+            border-radius: 12px;
+            line-height: 1.9;
+            box-shadow: 0 0 10px rgba(187,134,252,0.3);
+            font-size: 14px;
+        }
+
+        .tts-btn {
+            background: #3f37c9;
+            box-shadow: 0 0 10px rgba(63,55,201,0.7);
+            margin-bottom: 8px;
+        }
+
+        .easy-btn {
+            background: #4caf50;
+            box-shadow: 0 0 12px rgba(76,175,80,0.7);
+        }
+        .hard-btn {
+            background: #e94560;
+            box-shadow: 0 0 12px rgba(233,69,96,0.7);
+        }
+
+        .stats-box {
+            margin-top: 18px;
+            padding: 14px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 14px;
+            line-height: 1.9;
+            font-size: 13px;
+        }
+
+        .hard-list {
+            margin-top: 15px;
+            padding: 12px;
+            background: rgba(255,255,255,0.12);
+            border-radius: 12px;
+            display: none;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        canvas {
+            margin-top: 20px;
+            background: rgba(0,0,0,0.25);
+            border-radius: 12px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity:0; transform:translateY(8px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1);   box-shadow: 0 0 15px #4caf50; }
+            50%{ transform: scale(1.04);box-shadow: 0 0 25px #4caf50; }
+            100%{transform: scale(1);   box-shadow: 0 0 15px #4caf50; }
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25%{ transform: translateX(-6px);}
+            50%{ transform: translateX(6px);}
+            75%{ transform: translateX(-6px);}
+            100%{transform: translateX(0);}
+        }
+
+        @media (max-width: 600px) {
+            .container { margin-top: 70px; padding: 18px; }
+            .word { font-size: 26px; }
+            button { width: 100%; margin-top: 6px; }
+            #meaningBox { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <button class="toggle-dark" id="toggleDark">🌙</button>
+</div>
+
+<div class="container" id="learnSection">
+    <h2>📘 فلش‌کارت + SRS (Neon Mode)</h2>
+
+    <div class="neon-card">
+        <div id="wordBox" class="word"></div>
+
+        <button id="ttsBtn" class="tts-btn">🔊 تلفظ</button>
+        <button id="showMeaningBtn">نمایش معنی</button>
+
+        <div id="meaningBox"></div>
+
+        <div style="margin-top:16px;">
+            <button id="btnKnow" class="easy-btn">✔️ بلد بودم</button>
+            <button id="btnDontKnow" class="hard-btn">❌ بلد نبودم</button>
+            <button id="btnHardMark" style="margin-top:8px;">⭐ اضافه به لغات سخت</button>
+        </div>
+
+        <div style="margin-top:12px; display:flex; gap:8px; flex-wrap:wrap; justify-content:center;">
+            <button id="prevBtn">⬅ لغت قبلی</button>
+            <button id="nextBtn">لغت بعدی ➜</button>
+        </div>
+    </div>
+
+    <div class="stats-box" id="statsBox">
+        <b>📊 آمار عملکرد:</b><br>
+        تعداد کل لغات: <span id="totalWords">0</span><br>
+        لغات دیده‌شده: <span id="seenWordsCount">0</span><br>
+        لغات سخت: <span id="hardCount">0</span><br>
+        دقت کلی: <span id="acc">0</span>%<br>
+        Performance Index: <span id="pi">0</span>/100<br>
+        مرور امروز: <span id="reviewsToday">0</span>
+    </div>
+
+    <canvas id="progressChart" height="140"></canvas>
+
+    <button id="toggleHardMode" style="margin-top:18px;">حالت مرور: همه لغات</button>
+    <button id="showHardList" style="margin-top:8px;">⭐ نمایش لغات سخت</button>
+    <div class="hard-list" id="hardListContainer"></div>
+</div>
+
+<script>
+    const STORAGE_KEY = "neonVocabStateV2";
+
+    const map = new Map();
+    vocab.forEach((item, idx) => { map.set(item.word.toLowerCase(), idx); });
+
+    let current = null;
+    let prevCard = null;
+
+    let totalReviews = 0;
+    let correctAnswers = 0;
+    let todayReviews = 0;
+    let todayKey = null;
+    let seenWords = new Set();
+    let hardMode = false;
+
+    let chart = null;
+
+    function todayStr() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function initSRS(item) {
+        if (item.ef === undefined) item.ef = 2.5;
+        if (item.interval === undefined) item.interval = 0;
+        if (item.reps === undefined) item.reps = 0;
+        if (item.nextReview === undefined) item.nextReview = Date.now();
+        if (item.hard === undefined) item.hard = false;
+        if (item.hardStreak === undefined) item.hardStreak = 0;
+    }
+    vocab.forEach(initSRS);
+
+    function loadState() {
+        todayKey = todayStr();
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+            const s = JSON.parse(raw);
+
+            if (s.stats) {
+                totalReviews = s.stats.totalReviews || 0;
+                correctAnswers = s.stats.correctAnswers || 0;
+                if (s.stats.todayKey === todayKey) {
+                    todayReviews = s.stats.todayReviews || 0;
+                } else {
+                    todayReviews = 0;
+                }
+                if (Array.isArray(s.stats.seenWords)) {
+                    seenWords = new Set(s.stats.seenWords);
+                }
+            }
+            if (s.perWord) {
+                vocab.forEach(v => {
+                    const key = v.word.toLowerCase();
+                    const saved = s.perWord[key];
+                    if (saved) {
+                        v.ef = saved.ef;
+                        v.interval = saved.interval;
+                        v.reps = saved.reps;
+                        v.nextReview = saved.nextReview;
+                        v.hard = saved.hard;
+                        v.hardStreak = saved.hardStreak || 0;
+                    }
+                });
+            }
+        } catch (e) {
+            console.log("loadState error", e);
+        }
+    }
+
+    function saveState() {
+        try {
+            const perWord = {};
+            vocab.forEach(v => {
+                perWord[v.word.toLowerCase()] = {
+                    ef: v.ef,
+                    interval: v.interval,
+                    reps: v.reps,
+                    nextReview: v.nextReview,
+                    hard: v.hard,
+                    hardStreak: v.hardStreak
+                };
+            });
+            const out = {
+                perWord,
+                stats: {
+                    totalReviews,
+                    correctAnswers,
+                    todayKey,
+                    todayReviews,
+                    seenWords: Array.from(seenWords)
+                }
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(out));
+        } catch (e) {
+            console.log("saveState error", e);
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        loadState();
+        initChart();
+        loadNext();
+        updateStats();
+    });
+
+    function getPoolForReview() {
+        let pool = vocab;
+        if (hardMode) {
+            const hardOnes = vocab.filter(v => v.hard);
+            if (hardOnes.length > 0) pool = hardOnes;
+        }
+        return pool;
+    }
+
+    function loadNext() {
+        const pool = getPoolForReview();
+        if (!pool.length) return;
+        const now = Date.now();
+        const due = pool.filter(v => v.nextReview <= now);
+
+        if (current) prevCard = current;
+        if (due.length > 0)
+            current = due[Math.floor(Math.random() * due.length)];
+        else
+            current = pool[Math.floor(Math.random() * pool.length)];
+
+        renderCard();
+    }
+
+    function renderCard() {
+        document.getElementById("wordBox").textContent = current.word;
+        document.getElementById("meaningBox").style.display = "none";
+        document.getElementById("showMeaningBtn").style.display = "inline-block";
+    }
+
+    document.getElementById("showMeaningBtn").onclick = () => {
+        const box = document.getElementById("meaningBox");
+        box.style.display = "block";
+        box.innerHTML = `
+            <b>معنی:</b> ${current.meaning_fa}<br><br>
+            <b>مثال:</b> ${current.example_en}<br><br>
+            <b>کاربرد:</b> ${current.usage_fa}<br><br>
+            <b>نوت:</b> ${current.note}
+        `;
+        document.getElementById("showMeaningBtn").style.display = "none";
+    };
+
+    function srsUpdate(grade) {
+        if (grade === 0) {
+            current.reps = 0;
+            current.interval = 1;
+            current.nextReview = Date.now() + 1 * 86400000;
+            current.hard = true;
+            current.hardStreak = 0;
+            return;
+        }
+
+        current.reps++;
+        if (current.reps === 1) current.interval = 1;
+        else if (current.reps === 2) current.interval = 3;
+        else current.interval = Math.round(current.interval * current.ef);
+
+        current.ef = current.ef + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02));
+        if (current.ef < 1.3) current.ef = 1.3;
+
+        current.nextReview = Date.now() + current.interval * 86400000;
+
+        if (hardMode && current.hard) {
+            current.hardStreak = (current.hardStreak || 0) + 1;
+            if (current.hardStreak >= 3) {
+                current.hard = false;
+                current.hardStreak = 0;
+            }
+        } else {
+            current.hardStreak = 0;
+        }
+    }
+
+    function handleAnswer(isCorrect) {
+        totalReviews++;
+        todayReviews++;
+        seenWords.add(current.word.toLowerCase());
+
+        if (isCorrect) {
+            correctAnswers++;
+            srsUpdate(4);
+        } else {
+            srsUpdate(0);
+        }
+
+        nextCardAnimation(isCorrect);
+        updateStats();
+        saveState();
+        loadNext();
+    }
+
+    document.getElementById("btnKnow").onclick = () => handleAnswer(true);
+    document.getElementById("btnDontKnow").onclick = () => handleAnswer(false);
+    document.getElementById("nextBtn").onclick = () => loadNext();
+
+    document.getElementById("prevBtn").onclick = () => {
+        if (!prevCard) return;
+        const temp = current;
+        current = prevCard;
+        prevCard = temp;
+        renderCard();
+    };
+
+    function nextCardAnimation(isCorrect) {
+        const card = document.querySelector(".neon-card");
+        card.style.animation = isCorrect ? "pulse 0.5s" : "shake 0.5s";
+        setTimeout(() => { card.style.animation = ""; }, 500);
+    }
+
+    document.getElementById("btnHardMark").onclick = () => {
+        current.hard = true;
+        current.hardStreak = 0;
+        alert("⭐ این لغت به لیست لغات سخت اضافه شد.");
+        updateStats();
+        saveState();
+    };
+
+    document.getElementById("showHardList").onclick = () => {
+        const list = vocab.filter(v => v.hard);
+        const box = document.getElementById("hardListContainer");
+
+        if (list.length === 0) {
+            box.style.display = "block";
+            box.innerHTML = "هنوز لغت سختی ثبت نشده.";
+            return;
+        }
+
+        box.style.display = "block";
+        box.innerHTML = list.map(v => "⭐ " + v.word).join("<br>");
+    };
+
+    document.getElementById("toggleHardMode").onclick = () => {
+        hardMode = !hardMode;
+        document.getElementById("toggleHardMode").textContent =
+            hardMode ? "حالت مرور: فقط لغات سخت" : "حالت مرور: همه لغات";
+        loadNext();
+    };
+
+    function updateStats() {
+        const total = vocab.length;
+        const hardCount = vocab.filter(v => v.hard).length;
+        const seenCount = seenWords.size;
+        const acc = totalReviews ? Math.round((correctAnswers / totalReviews) * 100) : 0;
+        const hardRate = total ? Math.round((hardCount / total) * 100) : 0;
+        const seenRate = total ? Math.round((seenCount / total) * 100) : 0;
+        const pi = Math.max(0, Math.min(100, Math.round(acc - hardRate / 2)));
+
+        document.getElementById("totalWords").textContent = total;
+        document.getElementById("seenWordsCount").textContent = seenCount;
+        document.getElementById("hardCount").textContent = hardCount;
+        document.getElementById("acc").textContent = acc;
+        document.getElementById("pi").textContent = pi;
+        document.getElementById("reviewsToday").textContent = todayReviews;
+
+        if (chart) {
+            chart.data.datasets[0].data = [acc, hardRate, seenRate];
+            chart.update();
+        }
+    }
+
+    function initChart() {
+        const ctx = document.getElementById("progressChart").getContext("2d");
+        chart = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: ["دقت کلی", "درصد لغات سخت", "درصد لغات دیده‌شده"],
+                datasets: [{
+                    label: "وضعیت یادگیری",
+                    data: [0, 0, 0],
+                    backgroundColor: ["#4caf50", "#e94560", "#bb86fc"]
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                },
+                plugins: {
+                    legend: { labels: { color: "#fff" } }
+                }
+            }
+        });
+    }
+
+    document.getElementById("ttsBtn").onclick = () => {
+        const text = current ? current.word : "";
+        if (!text) return;
+
+        if ("speechSynthesis" in window) {
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = "en-US";
+            utter.rate = 0.95;
+            speechSynthesis.speak(utter);
+            return;
+        }
+
+        const url =
+            "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&q=" +
+            encodeURIComponent(text) +
+            "&tl=en";
+        new Audio(url).play();
+    };
+
+    document.getElementById("toggleDark").onclick = () => {
+        document.body.classList.toggle("dark");
+    };
+
+    if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+            .register("service-worker.js")
+            .then(() => console.log("SW registered"))
+            .catch(err => console.log("SW failed", err));
+    }
+</script>
+
+</body>
+</html>
